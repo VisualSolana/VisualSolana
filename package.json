@@ -1,0 +1,49 @@
+{
+	"name": "visualsolana",
+	"displayName": "VisualSolana",
+	"description": "Blockly editor and code generator for Solana Rust BPF programs",
+	"version": "0.0.1",
+	"publisher": "jgensler8",
+	"engines": {
+		"vscode": "^1.52.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCustomEditor:visualsolana.vsol"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/microsoft/vscode-extension-samples.git"
+	},
+	"main": "./out/extension.js",
+	"contributes": {
+		"customEditors": [
+			{
+				"viewType": "visualsolana.vsol",
+				"displayName": "VisualSolana",
+				"selector": [
+					{
+						"filenamePattern": "*.vsol"
+					}
+				]
+			}
+		],
+		"commands": []
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint . --ext .ts,.tsx",
+		"watch": "tsc -w -p ./"
+	},
+	"devDependencies": {
+		"@types/node": "^12.12.0",
+		"@types/vscode": "^1.52.0",
+		"@typescript-eslint/eslint-plugin": "^4.16.0",
+		"@typescript-eslint/parser": "^4.16.0",
+		"eslint": "^7.21.0",
+		"typescript": "^4.2.2"
+	}
+}
