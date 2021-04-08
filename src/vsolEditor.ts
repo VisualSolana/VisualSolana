@@ -118,22 +118,12 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 			</head>
 			<body>
 				<div>
-					<button>generate backend</button>
+					<button onClick="generate_backend()">generate backend</button>
 					<button>generate backend preview</button>
 					<input type="checkbox">auto-preview</input>
 					
 					<button>generate frontend</button>
 				</div>
-				
-				<xml id="toolbox" style="display: none">
-					<block type="controls_if"></block>
-					<block type="controls_repeat_ext"></block>
-					<block type="logic_compare"></block>
-					<block type="math_number"></block>
-					<block type="math_arithmetic"></block>
-					<block type="text"></block>
-					<block type="text_print"></block>
-				</xml>
 
 				<table width="100%" height="600px">
 					<tr>
@@ -145,8 +135,6 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 					</td>
 					</tr>
 				</table>
-				
-				<button>below</button>
 
 				<script nonce="${nonce}" src="${blocklyUri}"></script>
 				<script nonce="${nonce}" src="${scriptUri}"></script>

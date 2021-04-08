@@ -1,3 +1,3 @@
-# VisualSolana
+# VisualSolana (*.vsol)
 
-a Blockly-based visual editor for Rust BPF code generation
+Blockly editor and code generator for Solana Rust BPF programs
