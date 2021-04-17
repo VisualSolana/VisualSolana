@@ -25,17 +25,30 @@
 
 Blockly.defineBlocksWithJsonArray([{
 	"type": "solana_program",
-	"message0": "%1 %2",
+	"message0": "%1 %2 type library %3 instruction library %4 instruction impl %5",
 	"args0": [
-		{
-		  "type": "field_label_serializable",
-		  "name": "label",
-		  "text": "solana program"
-		},
-		{
-			"type": "input_statement",
-			"name": "statement"
-		}
+	  {
+		"type": "field_input",
+		"name": "NAME",
+		"text": "solana program"
+	  },
+	  {
+		"type": "input_dummy"
+	  },
+	  {
+		"type": "input_statement",
+		"name": "type library",
+		"check": "type_definition"
+	  },
+	  {
+		"type": "input_statement",
+		"name": "instruction library",
+		"check": "instruction_definition"
+	  },
+	  {
+		"type": "input_statement",
+		"name": "instruction impl"
+	  }
 	],
 	"colour": 0,
 	"tooltip": "the outermost solana program",
@@ -61,7 +74,103 @@ Blockly.defineBlocksWithJsonArray([{
 	"colour": 60,
 	"tooltip": "log",
 	"helpUrl": ""
-}])
+},
+{
+	"type": "type_field",
+	"message0": "field name %1 type %2",
+	"args0": [
+	  {
+		"type": "input_value",
+		"name": "field_name",
+		"check": "String"
+	  },
+	  {
+		"type": "input_value",
+		"name": "field_type",
+		"check": [
+		  "Number",
+		  "String",
+		  "ComplexType"
+		]
+	  }
+	],
+	"previousStatement": null,
+	"nextStatement": null,
+	"colour": 30,
+	"tooltip": "",
+	"helpUrl": ""
+},
+{
+	"type": "type_definition",
+	"message0": "type definition %1 name %2 type fields %3",
+	"args0": [
+	  {
+		"type": "input_dummy"
+	  },
+	  {
+		"type": "input_value",
+		"name": "NAME",
+		"check": "String"
+	  },
+	  {
+		"type": "input_statement",
+		"name": "fields",
+		"check": "type_field"
+	  }
+	],
+	"previousStatement": null,
+	"nextStatement": null,
+	"colour": 210,
+	"tooltip": "",
+	"helpUrl": ""
+},
+{
+	"type": "account_layout",
+	"message0": "account name %1 account layout (type) %2",
+	"args0": [
+	  {
+		"type": "input_value",
+		"name": "account_name",
+		"check": "String"
+	  },
+	  {
+		"type": "input_value",
+		"name": "layout",
+		"check": "String"
+	  }
+	],
+	"previousStatement": null,
+	"nextStatement": null,
+	"colour": 165,
+	"tooltip": "",
+	"helpUrl": ""
+},
+{
+	"type": "instruction_definition",
+	"message0": "name %1 accounts %2 input data type %3",
+	"args0": [
+	  {
+		"type": "input_value",
+		"name": "name"
+	  },
+	  {
+		"type": "input_statement",
+		"name": "accounts",
+		"check": "account_layout"
+	  },
+	  {
+		"type": "input_value",
+		"name": "input data type",
+		"check": "String"
+	  }
+	],
+	"previousStatement": null,
+	"nextStatement": null,
+	"colour": 90,
+	"tooltip": "",
+	"helpUrl": ""
+}
+])
 
 Blockly.SolanaRust = new Blockly.Generator('SolanaRust');
 /**
@@ -83,7 +192,6 @@ Blockly.SolanaRust = new Blockly.Generator('SolanaRust');
 Blockly.SolanaRust['solana_program'] = function (block) {
 	var statements_statement = Blockly.SolanaRust.statementToCode(block, 'statement');
 	// TODO: Assemble JavaScript into code variable.
-	console.log(statements_statement);
 	var code = `// !!! GENERATED CODE: DO NOT MODIFY !!!	
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -110,37 +218,90 @@ ${statements_statement}
 
 Blockly.SolanaRust['log'] = function (block) {
 	var value_log = Blockly.SolanaRust.valueToCode(block, 'log', Blockly.JavaScript.ORDER_ATOMIC);
-	console.log(block)
-	// TODO: Assemble JavaScript into code variable.
 	var code = `msg!(${value_log})\n`;
-	// if(block.nextStatement) {
-		// var more_code = Blockly.SolanaRust.statementToCode(block.next, 'nextStatement', Blockly.JavaScript.ORDER_ATOMIC);
-		// console.log(more_code);
-	// }
 	return code;
 };
 
 Blockly.SolanaRust['text'] = function (block) {
 	var value_text = block.getFieldValue("TEXT");
-	// TODO: Assemble JavaScript into code variable.
 	var code = `"${value_text}"`;
 	return [code, Blockly.JavaScript.ORDER_ATOMIC];
 };
 
 function custom_toolbox() {
 	return `<xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-	<block type="solana_program"></block>
-	<block type="log"></block>
-	<block type="text">
-	  <field name="TEXT"></field>
-	</block>
-  </xml>`
+<category name="Basic Types">
+<block type="text">
+    <field name="TEXT"></field>
+</block>
+<block type="math_number">
+    <field name="NUM">0</field>
+</block>
+</category>
+
+<category name="Program">
+<block type="solana_program">
+    <field name="NAME">solana program</field>
+</block>
+</category>
+
+<category name="Type Definition">
+<block type="type_definition"></block>
+<block type="type_field"></block>
+</category>
+
+<category name="Interface Definition">
+<block type="instruction_definition"></block>
+<block type="account_layout"></block>
+</category>
+
+<category name="Interface Impl">
+</category>
+
+<category name="code">
+<block type="log">
+    <field name="asdf">log</field>
+</block>
+</category>
+
+</xml>`
+}
+
+function generate_types_and_instructions() {
+	/*
+	// convert types and instructions from existing workspace into native Blockly function blocks
+	let interfaces_text = Blockly.VisualSolana.workspacetoCode(workspace);
+	let interfaces = JSON.parse(interfaces_text);
+	// create a new workspace with these 
+	workspace.defineBlocksWithJsonArray(interfaces);
+	// start with basic toolbox and "dynamically" add in the interfaces so they appear as functions
+	let toolbox = custom_toolbox();
+	for(let iface in interfaces) {
+		toolbox.category("interface_impl").append(interface_to_block(iface))
+	}
+	// define the interfaces as blockly native functions
+	for(let iface in interfaces) {
+		// check if function already exists in dom
+		// if it does, we need to be careful about copying the blocks and deleting the old version
+		
+		// define the function
+		// TODO make this declare variables
+		workspace.dom.insert("<block type=procedures_blocknoreturn></block>")
+
+		// call the function
+		workspace.dom.find("interface_impl").inset("<block type=interface_impl name=iface.name> <block type=procedures_callnoreturn><block> </block>")
+	}
+	*/
 }
 
 function generate_backend() {
-	console.log("would generate backend");
+	// TODO
+}
+
+function generate_backend_preview() {
 	let code = Blockly.SolanaRust.workspaceToCode(workspace);
-	console.log(code);
+	let previewElement = document.getElementById('blocklyPreview');
+	previewElement.innerHTML = code;
 }
 
 const vscode = acquireVsCodeApi();

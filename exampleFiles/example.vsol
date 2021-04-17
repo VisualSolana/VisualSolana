@@ -1,1 +1,42 @@
-<xml xmlns="https://developers.google.com/blockly/xml"><block type="solana_program" id="*2^nJ^sE~Lo(}GNv|mp|" x="69" y="56"><field name="label">solana program</field><statement name="statement"><block type="log" id="9?][q2WIpJOO7Vz77et~"><field name="label">msg</field><value name="log"><block type="text" id="C/[J`JwtF9zLY7{WX0sD"><field name="TEXT">hello world</field></block></value><next><block type="log" id="[6ol+`vz2LuLDrX8IMj{"><field name="label">msg</field><value name="log"><block type="text" id="F7kx0#GSWGkt2CM4=2{5"><field name="TEXT">test2</field></block></value></block></next></block></statement></block></xml>
+<xml xmlns="https://developers.google.com/blockly/xml">
+	<block type="solana_program" id="/0@e9rL.v1!do-vZv{fR" x="83" y="30">
+		<field name="NAME">solana program</field>
+		<statement name="instruction library">
+			<block type="instruction_definition" id="WAVPEiLq~$v2Fjl$uS}D">
+				<value name="name">
+					<block type="text" id="fJw%BDPV%Pzh:Wq+*1AC">
+						<field name="TEXT"></field>
+					</block>
+				</value>
+				<statement name="accounts">
+					<block type="account_layout" id="|cGM=@^,w(1k8[D$D3`o">
+						<value name="account_name">
+							<block type="text" id="Y(pD2Y,~c$XtAt-,^0JA">
+								<field name="TEXT"></field>
+							</block>
+						</value>
+						<value name="layout">
+							<block type="text" id="LB}mv]Mx;kh25YNQ+#;!">
+								<field name="TEXT"></field>
+							</block>
+						</value>
+						<next>
+							<block type="account_layout" id="$WXWS`R}:S0uXe9*s,8B">
+								<value name="account_name">
+									<block type="text" id="/Zb[Te8E-x{3_q?_y%G8">
+										<field name="TEXT"></field>
+									</block>
+								</value>
+								<value name="layout">
+									<block type="text" id="=db:IoD7.@uQe80Y(1+f">
+										<field name="TEXT">name</field>
+									</block>
+								</value>
+							</block>
+						</next>
+					</block>
+				</statement>
+			</block>
+		</statement>
+	</block>
+</xml>

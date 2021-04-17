@@ -2,3 +2,7 @@ blocklyarea {
 	height: 480px;
 	width: 600px;
 }
+
+.blocklyTreeLabel {
+	color: black;
+}

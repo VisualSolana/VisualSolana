@@ -118,11 +118,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 			</head>
 			<body>
 				<div>
-					<button onClick="generate_backend()">generate backend</button>
-					<button>generate backend preview</button>
-					<input type="checkbox">auto-preview</input>
-					
-					<button>generate frontend</button>
+					<button onClick="generate_types_and_instructions()">generate types and instructions</button>
 				</div>
 
 				<table width="100%" height="600px">
@@ -131,10 +127,22 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 					</td>
 					</tr>
 					<tr>
-					<td height="600px" id="blocklyPreview">
+						<td>
+						<button>generate backend preview</button>
+						<input type="checkbox">auto-preview</input>
+						</td>
+					</tr>
+					<tr>
+					<td height="600px">
+					<pre id="blocklyPreview" style="font-family: mono; display: block;"></pre>
 					</td>
 					</tr>
 				</table>
+
+				<div>
+					<button onClick="generate_backend()">generate backend</button>
+					<button>generate frontend</button>
+				</div>
 
 				<script nonce="${nonce}" src="${blocklyUri}"></script>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
