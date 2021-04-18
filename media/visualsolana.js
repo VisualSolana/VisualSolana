@@ -357,11 +357,11 @@ exports.RustGeneratorFunctionLibrary = function () {
 				let field_type = exports.TypeGenerator.valueToCode(b, 'field_type', Blockly.JavaScript.ORDER_ATOMIC).replace(/\"/g, '');
 				// try and parse
 				let field_type_count = parseInt(field_type);
-				// if string -> complex type
+				// if string -> [complex type; 1]
 				if (field_type_count === NaN) {
 					field_type_count = 1;
 				} else {
-					// if int -> [u8; <parsed_value>]
+					// if int -> [u8; <parsed_int>]
 					field_type = "u8";
 				}
 				field_definition = `\tpub ${field_name}: [${field_type}; ${field_type_count}],\n`;
@@ -393,10 +393,9 @@ ${fields_text}}`
 
 			return `// !!! GENERATED CODE: DO NOT MODIFY !!!
 use solana_program::{
-	account_info::{next_account_info, AccountInfo},
+	account_info::{AccountInfo},
 	entrypoint,
 	entrypoint::ProgramResult,
-	msg,
 	program_error::ProgramError,
 	pubkey::Pubkey,
 };
@@ -410,6 +409,7 @@ pub fn process_instruction(
 	accounts: &[AccountInfo],
 	instruction_data: &[u8],
 ) -> ProgramResult {
+	Ok(())
 }`;
 		}
 	}

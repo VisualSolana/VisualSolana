@@ -1,3 +1,4 @@
+import { create } from 'domain';
 import * as vscode from 'vscode';
 import { getNonce } from './util';
 
@@ -43,7 +44,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 		};
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-		function updateWebview(event) {
+		function updateWebview(event: any) {
 			webviewPanel.webview.postMessage({
 				type: 'update',
 				text: document.getText(),
@@ -75,6 +76,9 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 			switch (e.type) {
 				case 'blocklyEvent':
 					this.blocklyEvent(document, e);
+					return;
+				case 'generateRust':
+					this.generateRustEvent(document, e);
 					return;
 			}
 		});
@@ -143,8 +147,8 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 				</table>
 
 				<div>
-					<button onClick="generate_backend()">generate backend</button>
-					<button>generate frontend</button>
+					<button onClick="generate_rust_backend()">generate backend</button>
+					<button onClick="generate_js_frontend()">generate frontend</button>
 				</div>
 
 				<script nonce="${nonce}" src="${blocklyUri}"></script>
@@ -165,7 +169,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 	 * Write out the json to a given document.
 	 */
 	private updateTextDocument(document: vscode.TextDocument, blocklyText: any) {
-		if(document.getText() == blocklyText) {
+		if (document.getText() == blocklyText) {
 			console.log("Blockly Text same as document, not creating an edit");
 			return;
 		}
@@ -180,5 +184,63 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 			blocklyText);
 
 		return vscode.workspace.applyEdit(edit);
+	}
+
+	private relative_file_uri(document: vscode.TextDocument, file_parts: Array<string>){
+		const directory_parts = document.uri.path.split(/\//).slice(0, -1);
+		return vscode.Uri.parse(directory_parts.concat(file_parts).join("/"));
+	}
+
+	private generate_relative_file(document: vscode.TextDocument, file_parts: Array<string>, contents: string) {
+		const uri = this.relative_file_uri(document, file_parts);
+		const edit = new vscode.WorkspaceEdit();
+		edit.createFile(uri, {overwrite: true, ignoreIfExists: true});
+		const edit_lines = (contents.match(/\n/g) || []).length;
+		edit.replace(uri, new vscode.Range(0,0,edit_lines,0), contents);
+		return vscode.workspace.applyEdit(edit).then(() => {
+			vscode.workspace.openTextDocument(uri).then(file => {
+				file.save();
+			});
+		});
+	}
+
+	private generateRustEvent(document: vscode.TextDocument, event: any) {
+		const module_name = "visualsolana-autogen";
+		// generate: lib.rs
+		this.generate_relative_file(document, [module_name, "src", "lib.rs"], event.code);
+
+		// generate: Cargo.toml
+		const cargo_toml_text = `[package]
+name = "${module_name}"
+version = "0.0.1"
+description = "${module_name}"
+authors = ["Solana Maintainers <maintainers@solana.com>"]
+repository = "https://github.com/solana-labs/solana"
+license = "Apache-2.0"
+homepage = "https://solana.com/"
+edition = "2018"
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+solana-program = "=1.6.1"
+
+[dev-dependencies]
+solana-program-test = "=1.6.1"
+solana-sdk = "=1.6.1"
+
+[lib]
+crate-type = ["cdylib", "lib"]`;
+		this.generate_relative_file(document, [module_name, "Cargo.toml"], cargo_toml_text);
+
+		// generate: Xargo.toml
+		const xargo_toml_text = `[target.bpfel-unknown-unknown.dependencies.std]
+features = []`;
+		this.generate_relative_file(document, [module_name, "Xargo.toml"], xargo_toml_text);
+
+		// generate: .gitignore
+		const gitignore_text = `target/`;
+		this.generate_relative_file(document, [module_name, ".gitignore"], gitignore_text);
 	}
 }

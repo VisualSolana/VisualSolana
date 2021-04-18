@@ -64,14 +64,20 @@ function generate_types_and_instructions() {
 	*/
 }
 
-function generate_backend() {
-	// TODO
+function generate_rust_backend() {
+	let code = generate_rust_preview();
+	vscode.postMessage({ type: 'generateRust', code: code })
 }
 
 function generate_rust_preview() {
 	let code = visualsolana.RustGenerator.workspaceToCode(workspace);
 	let previewElement = document.getElementById('blocklyPreview');
 	previewElement.innerHTML = code;
+	return code;
+}
+
+function generate_js_frontend() {
+	console.log("would generate frontend");
 }
 
 // create workspace
@@ -123,6 +129,17 @@ window.addEventListener('message', event => {
 			}
 
 			reinstantiateWorkspaceDom(text);
+
+			// Then persist state information.
+			// This state is returned in the call to `vscode.getState` below when a webview is reloaded.
+			vscode.setState({ text });
 			return;
 	}
 });
+
+// Webviews are normally torn down when not visible and re-created when they become visible again.
+// State lets us save information across these re-loads
+const state = vscode.getState();
+if (state) {
+	reinstantiateWorkspaceDom(state.text);
+} 
