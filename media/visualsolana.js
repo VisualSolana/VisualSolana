@@ -1,5 +1,12 @@
-const { Block } = require('blockly');
-let Blockly = require('blockly');
+if(typeof Blockly === 'undefined') {
+	console.log("importing blockly");
+	Blockly = require('blockly');
+}
+if(typeof exports === 'undefined') {
+	console.log("defining exports")
+	exports = {};
+	visualsolana = exports;
+}
 
 exports.blocks = [
 	// type generator
@@ -369,8 +376,7 @@ pub fn process_instruction(
 	}
 }
 
-exports.workspace_factory = function () {
-	let workspace = new Blockly.Workspace();
+exports.decorate_workspace = function (workspace) {
 	workspace.TypeGenerator = exports.TypeGenerator;
 	workspace.FunctionGenerator = exports.FunctionGenerator;
 	workspace.RustGenerator = exports.RustGenerator;
@@ -387,6 +393,10 @@ exports.workspace_factory = function () {
 	for (let f in rust_functions) {
 		workspace.RustGenerator[f] = rust_functions[f];
 	}
+}
 
+exports.workspace_factory = function () {
+	let workspace = new Blockly.Workspace();
+	exports.decorate_workspace(workspace);
 	return workspace;
 }

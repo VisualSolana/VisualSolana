@@ -43,10 +43,11 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 		};
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-		function updateWebview() {
+		function updateWebview(event) {
 			webviewPanel.webview.postMessage({
 				type: 'update',
 				text: document.getText(),
+				event: event,
 			});
 		}
 
@@ -60,7 +61,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 
 		const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
 			if (e.document.uri.toString() === document.uri.toString()) {
-				updateWebview();
+				updateWebview(e);
 			}
 		});
 
@@ -78,7 +79,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 			}
 		});
 
-		updateWebview();
+		updateWebview(undefined);
 	}
 
 	/**
@@ -86,12 +87,14 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 	 */
 	private getHtmlForWebview(webview: vscode.Webview): string {
 		// Local path to script and css for the webview
-		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
-			this.context.extensionUri, 'media', 'vsol.js'));
-		const vsolCSSUri = webview.asWebviewUri(vscode.Uri.joinPath(
-			this.context.extensionUri, 'media', 'vsol.css'));
 		const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(
 			this.context.extensionUri, 'media', 'blockly_unpkg.js'));
+		const visualsolanaUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this.context.extensionUri, 'media', 'visualsolana.js'));
+		const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this.context.extensionUri, 'media', 'bridge.js'));
+		const bridgeCSSUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this.context.extensionUri, 'media', 'bridge.css'));
 
 		// Use a nonce to whitelist which scripts can be run
 		const nonce = getNonce();
@@ -112,7 +115,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-				<link href="${vsolCSSUri}" rel="stylesheet" />
+				<link href="${bridgeCSSUri}" rel="stylesheet" />
 
 				<title>VisualSolana Editor</title>
 			</head>
@@ -145,7 +148,8 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 				</div>
 
 				<script nonce="${nonce}" src="${blocklyUri}"></script>
-				<script nonce="${nonce}" src="${scriptUri}"></script>
+				<script nonce="${nonce}" src="${visualsolanaUri}"></script>
+				<script nonce="${nonce}" src="${bridgeUri}"></script>
 			</body>
 			</html>`;
 	}
@@ -162,7 +166,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 	 */
 	private updateTextDocument(document: vscode.TextDocument, blocklyText: any) {
 		if(document.getText() == blocklyText) {
-			console.log("Blockly Text same as document, not creating an edit")
+			console.log("Blockly Text same as document, not creating an edit");
 			return;
 		}
 
