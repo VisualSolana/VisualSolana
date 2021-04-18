@@ -1,8 +1,9 @@
-if(typeof Blockly === 'undefined') {
-	console.log("importing blockly");
+if (typeof exports !== 'undefined') {
+	// reimport blockly (during test suite)
 	Blockly = require('blockly');
 }
-if(typeof exports === 'undefined') {
+if (typeof exports === 'undefined') {
+	// fake module environment (in browser)
 	console.log("defining exports")
 	exports = {};
 	visualsolana = exports;
@@ -345,9 +346,47 @@ exports.RustGenerator.INDENT = "";
 exports.RustGeneratorFunctionLibrary = function () {
 	return {
 		"type_definition": function (block) {
+			let crawl_field_tree = function (b, index) {
+				if (!b) {
+					return [];
+				}
+				if (b.type !== "type_field") {
+					return crawl_field_tree(b.nextConnection.targetBlock(), index);
+				}
+				let field_name = exports.TypeGenerator.valueToCode(b, 'field_name', Blockly.JavaScript.ORDER_ATOMIC).replace(/\"/g, '');
+				let field_type = exports.TypeGenerator.valueToCode(b, 'field_type', Blockly.JavaScript.ORDER_ATOMIC).replace(/\"/g, '');
+				// try and parse
+				let field_type_count = parseInt(field_type);
+				// if string -> complex type
+				if (field_type_count === NaN) {
+					field_type_count = 1;
+				} else {
+					// if int -> [u8; <parsed_value>]
+					field_type = "u8";
+				}
+				field_definition = `\tpub ${field_name}: [${field_type}; ${field_type_count}],\n`;
+				return [field_definition].concat(crawl_field_tree(b.nextConnection.targetBlock(), index + 1));
+			}
+			let fieldsBlock = null;
+			for (let input of block.inputList) {
+				if (input.name == "fields") {
+					fieldsBlock = input;
+				}
+			}
+			if (fieldsBlock == null) {
+				return "";
+			}
+			let fields = []
+			for (let child of fieldsBlock.sourceBlock_.childBlocks_) {
+				if (child.type == "type_field") {
+					fields = crawl_field_tree(child, 0);
+				}
+			}
+
 			let type_name = exports.TypeGenerator.valueToCode(block, 'type_name', Blockly.JavaScript.ORDER_ATOMIC).replace(/\"/g, '');
+			let fields_text = fields.join("");
 			return `pub struct ${type_name} {
-}`
+${fields_text}}`
 		},
 		"solana_program": function (block) {
 			let type_block = exports.RustGenerator.statementToCode(block, 'type library');

@@ -219,7 +219,7 @@ pub fn process_instruction(
 						</value>
 						<value name="field_type">
 							<block type="text">
-								<field name="TEXT">12</field>
+								<field name="TEXT">10</field>
 							</block>
 						</value>
 						<next>
@@ -254,8 +254,8 @@ use solana_program::{
 
 // !!! type_block
 pub struct my_type {
-	pub my_text_field: [u8: 12],
-	pub my_int_field: u8,
+	pub my_text_field: [u8; 10],
+	pub my_int_field: [u8; 12],
 }
 
 entrypoint!(process_instruction);

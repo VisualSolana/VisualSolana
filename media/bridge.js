@@ -68,7 +68,7 @@ function generate_backend() {
 	// TODO
 }
 
-function generate_backend_preview() {
+function generate_rust_preview() {
 	let code = visualsolana.RustGenerator.workspaceToCode(workspace);
 	let previewElement = document.getElementById('blocklyPreview');
 	previewElement.innerHTML = code;

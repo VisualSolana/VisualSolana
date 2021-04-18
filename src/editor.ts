@@ -131,7 +131,7 @@ export class VSolEditorProvider implements vscode.CustomTextEditorProvider {
 					</tr>
 					<tr>
 						<td>
-						<button>generate backend preview</button>
+						<button onClick="generate_rust_preview()">generate rust preview</button>
 						<input type="checkbox">auto-preview</input>
 						</td>
 					</tr>
