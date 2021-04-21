@@ -21,5 +21,5 @@ jobs:
       - name: Publish VS Code Extension
         uses: HaaLeo/publish-vscode-extension@v0
         with:
-          pat: ${{OPEN_VSX_PAT}}
+          pat: ${{ secrets.OPEN_VSX_PAT }}
           dryRun: true
