@@ -2,7 +2,7 @@
 	"name": "visualsolana",
 	"displayName": "VisualSolana",
 	"description": "Blockly editor and code generator for Solana Rust BPF programs",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"publisher": "visualsolana",
 	"engines": {
 		"vscode": "^1.52.0"
