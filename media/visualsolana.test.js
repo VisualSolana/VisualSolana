@@ -5,18 +5,26 @@ function blockly_dom(xml_text) {
 	return Blockly.Xml.textToDom(`<xml xmlns="https://developers.google.com/blockly/xml">${xml_text}</xml>`);
 }
 
-function test_xml_text_to_type_generator(xml_text, expected_json) {
+function xml_text_to_type_generator(xml_text) {
 	let dom = blockly_dom(xml_text)
 	let workspace = visualsolana.workspace_factory();
 	Blockly.Xml.domToWorkspace(dom, workspace)
-	expect(JSON.parse(workspace.TypeGenerator.workspaceToCode(workspace))).toEqual(expected_json);
+	return workspace.TypeGenerator.workspaceToCode(workspace);
+}
+
+function test_xml_text_to_type_generator(xml_text, expected_json) {
+	expect(JSON.parse(xml_text_to_type_generator(xml_text))).toEqual(expected_json);
+}
+
+function xml_text_to_function_generator(xml_text) {
+	let dom = blockly_dom(xml_text)
+	let workspace = visualsolana.workspace_factory();
+	Blockly.Xml.domToWorkspace(dom, workspace)
+	return workspace.FunctionGenerator.workspaceToCode(workspace);
 }
 
 function test_xml_text_to_function_generator(xml_text, expected_text) {
-	let dom = blockly_dom(xml_text)
-	let workspace = visualsolana.workspace_factory();
-	Blockly.Xml.domToWorkspace(dom, workspace)
-	expect(workspace.FunctionGenerator.workspaceToCode(workspace)).toEqual(expected_text)
+	expect(xml_text_to_function_generator(xml_text)).toEqual(expected_text)
 	// let expected_function_dom = Blockly.Xml.textToDom(expected_text);
 	// let function_dom = Blockly.Xml.textToDom(workspace.FunctionGenerator.workspaceToCode(workspace));
 	// expect(function_dom).toEqual(expected_function_dom)
@@ -96,7 +104,7 @@ describe('TypeGenerator', () => {
 				"args0": [
 					{ "check": "my_type", "name": "value", "type": "input_value" },
 					{ "name": "field", "options": [["my_text_field", "0"], ["my_int_field", "1"]], "type": "field_dropdown" }
-				], "colour": 230, "helpUrl": "", "inputsInline": true, "message0": "%1 %2", "output": null, "tooltip": "", "type": "complex_type_getter"
+				], "colour": 230, "helpUrl": "", "inputsInline": true, "message0": "%1 %2", "output": null, "tooltip": "", "type": "complex_type_getter_my_type"
 			},
 			// setter
 			{
@@ -107,13 +115,46 @@ describe('TypeGenerator', () => {
 					{ "type": "input_dummy" },
 					{ "align": "CENTRE", "name": "variable", "type": "input_value" }
 				],
-				"colour": 230, "helpUrl": "", "inputsInline": true, "message0": "my_type: %1 set %2 %3 to %4 %5", "nextStatement": null, "previousStatement": null, "tooltip": "", "type": "complex_type_setter"
+				"colour": 230, "helpUrl": "", "inputsInline": true, "message0": "my_type: %1 set %2 %3 to %4 %5", "nextStatement": null, "previousStatement": null, "tooltip": "", "type": "complex_type_setter_my_type"
 			}]);
+	})
+
+	test('should generate multiple types from solana_program', () => {
+		let types = xml_text_to_type_generator(
+			`<block type="solana_program">
+		<field name="NAME">solana program</field>
+        <statement name="type library">
+			<block type="type_definition">
+				<value name="type_name">
+					<block type="text">
+						<field name="TEXT">my_first_type</field>
+					</block>
+				</value>
+				<statement name="fields"></statement>
+				<next>
+					<block type="type_definition">	
+						<value name="type_name">
+							<block type="text">
+								<field name="TEXT">my_second_type</field>
+							</block>
+						</value>
+						<statement name="fields"></statement>
+					</block>
+				</next>
+			</block>
+		</statement>
+		<statement name="instruction library">
+		</statement>
+		</block>`);
+		let parsed_types = JSON.parse(types);
+		expect(parsed_types).toHaveLength(2);
+		expect(parsed_types[0]).toHaveLength(2);
+		expect(parsed_types[1]).toHaveLength(2);
 	})
 })
 
 describe('InstructionGenerator', () => {
-	
+
 	test('should generate nothing for account_layout', () => {
 		let dom = blockly_dom(`<block type="account_layout"></block>`)
 		let workspace = visualsolana.workspace_factory();
@@ -156,14 +197,40 @@ describe('InstructionGenerator', () => {
 					</next>
 				</block>
 			</statement>
-		</block>`, `<block type="procedures_defnoreturn">
+		</block>`, `"<block type=\\\"procedures_defnoreturn\\\">
 				<mutation>
-<arg instruction_name="account_0"></arg>
-<arg instruction_name="account_1"></arg>
+<arg instruction_name=\\\"account_0\\\"></arg>
+<arg instruction_name=\\\"account_1\\\"></arg>
 </mutation>
-				<field name="NAME">do something</field>
-				<comment></comment>
-			</block>`);
+    <field name=\\\"NAME\\\">do something</field>     <comment></comment>    </block>"`.replace(/\s/g, " "));
+	})
+
+	test('should generate function blocks from solana_program', () => {
+		let functions = xml_text_to_function_generator(`<block type="solana_program">
+        <statement name="type library">
+		</statement>
+		<statement name="instruction library">
+			<block type="instruction_definition">
+				<value name="instruction_name">
+					<block type="text">
+						<field name="TEXT">instruction_1</field>
+					</block>
+				</value>
+				<statement name="accounts"></statement>
+				<next>
+					<block type="instruction_definition">
+						<value name="instruction_name">
+							<block type="text">
+								<field name="TEXT">instruction_2</field>
+							</block>
+						</value>
+						<statement name="accounts"></statement>
+					</block>
+				</next>
+			</block>
+		</statement>
+		</block>`)
+		expect(JSON.parse(functions)).toHaveLength(2);
 	})
 })
 
@@ -265,5 +332,67 @@ pub fn process_instruction(
 ) -> ProgramResult {
 	Ok(())
 }`)
+	})
+})
+
+describe("generate_types_and_instructions", () => {
+	let xml_text = `<block type="solana_program">
+	<field name="NAME">solana program</field>
+	<statement name="type library">
+		<block type="type_definition">
+			<value name="type_name">
+				<block type="text">
+					<field name="TEXT">my_first_type</field>
+				</block>
+			</value>
+			<statement name="fields"></statement>
+			<next>
+				<block type="type_definition">	
+					<value name="type_name">
+						<block type="text">
+							<field name="TEXT">my_second_type</field>
+						</block>
+					</value>
+					<statement name="fields"></statement>
+				</block>
+			</next>
+		</block>
+	</statement>
+	<statement name="instruction library">
+		<block type="instruction_definition">
+			<value name="instruction_name">
+				<block type="text">
+					<field name="TEXT">instruction_1</field>
+				</block>
+			</value>
+			<statement name="accounts"></statement>
+			<next>
+				<block type="instruction_definition">
+					<value name="instruction_name">
+						<block type="text">
+							<field name="TEXT">instruction_2</field>
+						</block>
+					</value>
+					<statement name="accounts"></statement>
+				</block>
+			</next>
+		</block>
+	</statement>
+	</block>`
+	let dom = blockly_dom(xml_text)
+	let workspace = visualsolana.workspace_factory();
+	Blockly.Xml.domToWorkspace(dom, workspace)
+
+	test("should generate types", () => {
+		visualsolana.generate_types_and_instructions(workspace);
+		visualsolana.generate_types_and_instructions(workspace);
+	})
+
+	test("should generate instructions based on types", () => {
+
+	})
+
+	test("should not replace existing functions", () => {
+
 	})
 })

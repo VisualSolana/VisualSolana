@@ -1,67 +1,9 @@
-function custom_toolbox() {
-	return `<xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-<category name="Basic Types">
-<block type="text">
-    <field name="TEXT"></field>
-</block>
-<block type="math_number">
-    <field name="NUM">0</field>
-</block>
-</category>
-
-<category name="Program">
-<block type="solana_program">
-    <field name="NAME">solana program</field>
-</block>
-</category>
-
-<category name="Type Definition">
-<block type="type_definition"></block>
-<block type="type_field"></block>
-</category>
-
-<category name="Interface Definition">
-<block type="instruction_definition"></block>
-<block type="account_layout"></block>
-</category>
-
-<category name="Interface Impl">
-</category>
-
-<category name="code">
-<block type="log">
-    <field name="asdf">log</field>
-</block>
-</category>
-
-</xml>`
-}
+// create workspace
+var workspace = Blockly.inject('blocklyDiv', { toolbox: visualsolana.generate_toolbox() });
+visualsolana.decorate_workspace(workspace);
 
 function generate_types_and_instructions() {
-	/*
-	// convert types and instructions from existing workspace into native Blockly function blocks
-	let interfaces_text = Blockly.VisualSolana.workspacetoCode(workspace);
-	let interfaces = JSON.parse(interfaces_text);
-	// create a new workspace with these 
-	workspace.defineBlocksWithJsonArray(interfaces);
-	// start with basic toolbox and "dynamically" add in the interfaces so they appear as functions
-	let toolbox = custom_toolbox();
-	for(let iface in interfaces) {
-		toolbox.category("interface_impl").append(interface_to_block(iface))
-	}
-	// define the interfaces as blockly native functions
-	for(let iface in interfaces) {
-		// check if function already exists in dom
-		// if it does, we need to be careful about copying the blocks and deleting the old version
-		
-		// define the function
-		// TODO make this declare variables
-		workspace.dom.insert("<block type=procedures_blocknoreturn></block>")
-
-		// call the function
-		workspace.dom.find("interface_impl").inset("<block type=interface_impl name=iface.name> <block type=procedures_callnoreturn><block> </block>")
-	}
-	*/
+	visualsolana.generate_types_and_instructions(workspace)
 }
 
 function generate_rust_backend() {
@@ -80,10 +22,6 @@ function generate_js_frontend() {
 	console.log("would generate frontend");
 }
 
-// create workspace
-var workspace = Blockly.inject('blocklyDiv', { toolbox: custom_toolbox() });
-visualsolana.decorate_workspace(workspace);
-
 // setup message passing
 const vscode = acquireVsCodeApi();
 
@@ -95,7 +33,7 @@ workspace.addChangeListener(function (event) {
 	if (event.type != Blockly.Events.BLOCK_MOVE && event.type != Blockly.Events.BLOCK_CHANGE) {
 		return
 	}
-	
+
 	block_updates_until = new Date().getTime();
 	block_updates_until += 1000;
 
@@ -106,6 +44,20 @@ workspace.addChangeListener(function (event) {
 
 // vscode -> blockly
 function reinstantiateWorkspaceDom(text) {
+	// TODO !!! there might be a better way of using mutations and a common getter/setter block pattern
+	// !!! I really just wanted type checking as it may be needed in Rust generator for conversions
+	// regenerate block definitions so toolbox has custom blocks
+	let temp_dom = Blockly.Xml.textToDom(text);
+	let temp_workspace = visualsolana.workspace_factory();
+	try {
+		Blockly.Xml.domToWorkspace(temp_dom, temp_workspace);
+	} catch (error) {
+		console.log("!!! expected 'undefined block' error as block usage and definition is cyclic");
+		console.log(error);
+		console.log("!!! end expected error");
+	}
+	visualsolana.generate_types_and_instructions(temp_workspace, workspace);
+
 	workspace.clear();
 	let dom = Blockly.Xml.textToDom(text);
 	Blockly.Xml.domToWorkspace(dom, workspace);
@@ -123,7 +75,7 @@ window.addEventListener('message', event => {
 				return
 			}
 
-			if(new Date().getTime() < block_updates_until) {
+			if (new Date().getTime() < block_updates_until) {
 				console.log("bridge: blocking event due to event debounce");
 				return;
 			}
@@ -142,4 +94,4 @@ window.addEventListener('message', event => {
 const state = vscode.getState();
 if (state) {
 	reinstantiateWorkspaceDom(state.text);
-} 
+}
