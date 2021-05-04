@@ -1,6 +1,6 @@
 # VisualSolana (*.vsol)
 
-VisualSolana is a VS Code extension for rapid prototyping of programs that run on Solana.
+VisualSolana is a [Visual Studio Code](https://docs.solana.com/) extension for rapid prototyping of programs that run on [Solana](https://docs.solana.com/).
 
 ## About
 
