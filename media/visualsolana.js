@@ -9,46 +9,51 @@ if (typeof exports === 'undefined') {
 	visualsolana = exports;
 }
 
-exports.generate_toolbox = function(type_getters_setters, interface_impl_functions) {
+exports.generate_toolbox = function (type_getters_setters, interface_impl_functions) {
 	return `<xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-<category name="Basic Types">
-<block type="text">
-    <field name="TEXT"></field>
-</block>
-<block type="math_number">
-    <field name="NUM">0</field>
-</block>
-</category>
-
 <category name="Program">
 <block type="solana_program">
     <field name="NAME">solana program</field>
 </block>
 </category>
 
+<sep></sep>
+<category name="Basic Types">
+	<block type="text">
+		<field name="TEXT"></field>
+	</block>
+	<block type="math_number">
+		<field name="NUM">0</field>
+	</block>
+</category>
 <category name="Type Definition">
-<block type="type_definition"></block>
-<block type="type_field"></block>
+	<block type="type_definition"></block>
+	<block type="type_field"></block>
+</category>
+<category name="Interface Definition">
+	<block type="instruction_definition"></block>
+	<block type="account_layout"></block>
 </category>
 
+<sep></sep>
 <category name="Type Getter/Setter">
 ${type_getters_setters}
 </category>
-
-<category name="Interface Definition">
-<block type="instruction_definition"></block>
-<block type="account_layout"></block>
-</category>
-
 <category name="Interface Impl">
 ${interface_impl_functions}
 </category>
-
-<category name="code">
-<block type="log">
-    <field name="label">log</field>
-</block>
+<category name="Solana Library">
+	<block type="log">
+		<field name="label">log</field>
+	</block>
 </category>
+
+<sep></sep>
+<category name="Math Functions">
+	<block type="math_arithmetic"></block>
+</category>
+<category name="Variables" custom="VARIABLE"></category>
+<category name="Functions" custom="PROCEDURE"></category>
 
 </xml>`
 }
@@ -154,7 +159,7 @@ exports.blocks = [
 	// outer program
 	{
 		"type": "solana_program",
-		"message0": "%1 %2 type library %3 instruction library %4 instruction impl %5",
+		"message0": "%1 %2 type library %3 instruction library %4",
 		"args0": [
 			{
 				"type": "field_input",
@@ -173,10 +178,6 @@ exports.blocks = [
 				"type": "input_statement",
 				"name": "instruction library",
 				"check": "instruction_definition"
-			},
-			{
-				"type": "input_statement",
-				"name": "instruction impl"
 			}
 		],
 		"colour": 0,
@@ -407,7 +408,7 @@ exports.FunctionGeneratorFunctionLibrary = function () {
 			// template arguments
 			let arg_text = "\n";
 			for (let account_name of account_names) {
-				arg_text += `<arg instruction_name="${account_name}"></arg>\n`
+				arg_text += `<arg name="${account_name}"></arg>\n`
 			}
 
 			let function_name = exports.FunctionGenerator.valueToCode(block, 'instruction_name', Blockly.JavaScript.ORDER_ATOMIC).replace(/\"/g, '')
@@ -506,6 +507,10 @@ pub fn process_instruction(
 	Ok(())
 }`;
 		},
+		"procedures_defnoreturn": function (block) {
+			// TODO
+			return "";
+		},
 		// basic types
 		"text": function (block) {
 			var value_text = block.getFieldValue("TEXT");
@@ -555,8 +560,8 @@ exports.workspace_factory = function () {
 	return workspace;
 }
 
-exports.generate_types = function(from_workspace, to_workspace) {
-	if(!to_workspace) {
+exports.generate_types = function (from_workspace, to_workspace) {
+	if (!to_workspace) {
 		to_workspace = from_workspace;
 	}
 	// convert types and instructions from existing workspace into native Blockly function blocks
@@ -567,7 +572,7 @@ exports.generate_types = function(from_workspace, to_workspace) {
 		// define block schema
 		for (let block of sub_array) {
 			delete Blockly.Blocks[block.type];
-			if(block.type.includes("getter")) {
+			if (block.type.includes("getter")) {
 				type_getters_setters[block.type] = `<block type="${block.type}"><field name="field"></field></block>`;
 			} else if (block.type.includes("setter")) {
 				type_getters_setters[block.type] = `<block type="${block.type}"><field name="variable"></field></block>`;
@@ -575,37 +580,85 @@ exports.generate_types = function(from_workspace, to_workspace) {
 		}
 		Blockly.defineBlocksWithJsonArray(sub_array);
 	}
-	// create a new workspace with these 
-	// start with basic toolbox and "dynamically" add in the interfaces so they appear as functions
-	let toolbox = exports.generate_toolbox(Object.values(type_getters_setters).join("\n"));
-	if(to_workspace.updateToolbox) {
-		to_workspace.updateToolbox(toolbox);
-	}
+	return Object.values(type_getters_setters);
 }
 
-exports.generate_instructions = function(from_workspace, to_workspace) {
-	if(!to_workspace) {
+exports.organize_blocks = function(workspace, starting_x = 5, starting_y = 5, y_spacing = 5) {
+	let next_y_start = starting_y;
+	let dom = Blockly.Xml.workspaceToDom(workspace)
+	workspace.topBlocks_.forEach(topBlock => {
+		for(let child of dom.children) {
+			if(child.id == topBlock.id && topBlock.getBoundingRectangle) {
+				let boundary = topBlock.getBoundingRectangle();
+				child.setAttribute("x", `${starting_x}`);
+				child.setAttribute("y", `${next_y_start}`);
+				next_y_start += y_spacing + (boundary.bottom - boundary.top);
+			}
+		}
+	})
+	workspace.clear()
+	Blockly.Xml.domToWorkspace(dom, workspace)
+}
+
+exports.generate_instructions = function (from_workspace, to_workspace) {
+	if (!to_workspace) {
 		to_workspace = from_workspace;
 	}
 	let instructions_text = to_workspace.FunctionGenerator.workspaceToCode(from_workspace);
 	let instructions = JSON.parse(instructions_text);
-	/*
 	// define the interfaces as blockly native functions
-	for(let iface in interfaces) {
+	let dom = Blockly.Xml.workspaceToDom(from_workspace);
+	instructions.forEach(instruction_text => {
+		let toolbox_instruction = Blockly.Xml.textToDom(instruction_text);
+		let instruction_name = toolbox_instruction.children[1].innerHTML;
+		let matching_child = null;
 		// check if function already exists in dom
 		// if it does, we need to be careful about copying the blocks and deleting the old version
-		
-		// define the function
-		// TODO make this declare variables
-		workspace.dom.insert("<block type=procedures_blocknoreturn></block>")
+		for(let child of dom.children) {
+			if(child.getAttribute("type") === "procedures_defnoreturn") {
+				for(let root_block_child of child.children) {
+					if(root_block_child.innerHTML === instruction_name) {
+						matching_child = child;
+					}
+				}
+			}
+		}
+		if(matching_child) {
+			// check if existing element has statement block
+			let matching_child_statement = null;
+			for(let maybe_statement of matching_child.children) {
+				if(maybe_statement.tagName === "statement") {
+					matching_child_statement = maybe_statement;
+				}
+			}
+			// if so, copy it over
+			if(matching_child_statement) {
+				toolbox_instruction.appendChild(matching_child_statement);
+			}
+			// always replace, args could have changed
+			matching_child.remove();
+			dom.appendChild(toolbox_instruction);
+		} else {
+			dom.appendChild(Blockly.Xml.textToDom(instruction_text));
+		}
+	})
 
-		// call the function
-		workspace.dom.find("interface_impl").inset("<block type=interface_impl name=iface.name> <block type=procedures_callnoreturn><block> </block>")
-	}
-	*/
+	to_workspace.clear();
+	Blockly.Xml.domToWorkspace(dom, to_workspace)
+	exports.organize_blocks(to_workspace)
+	return instructions;
 }
 
 exports.generate_types_and_instructions = function (from_workspace, to_workspace) {
-	exports.generate_types(from_workspace, to_workspace)
-	exports.generate_instructions(from_workspace, to_workspace)
+	if (!to_workspace) {
+		to_workspace = from_workspace;
+	}
+	let toolbox_types = exports.generate_types(from_workspace, to_workspace);
+	let toolbox_instructions = exports.generate_instructions(from_workspace, to_workspace);
+	// create a new workspace with these 
+	// start with basic toolbox and "dynamically" add in the interfaces so they appear as functions
+	let toolbox = exports.generate_toolbox(toolbox_types.join("\n"), toolbox_instructions.join("\n"));
+	if (to_workspace.updateToolbox) {
+		to_workspace.updateToolbox(toolbox);
+	}
 }
