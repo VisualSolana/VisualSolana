@@ -47,15 +47,16 @@ function reinstantiateWorkspaceDom(text) {
 	// TODO !!! there might be a better way of using mutations and a common getter/setter block pattern
 	// !!! I really just wanted type checking as it may be needed in Rust generator for conversions
 	// regenerate block definitions so toolbox has custom blocks
+	// only keep solana_program block for type information
 	let temp_dom = Blockly.Xml.textToDom(text);
-	let temp_workspace = visualsolana.workspace_factory();
-	try {
-		Blockly.Xml.domToWorkspace(temp_dom, temp_workspace);
-	} catch (error) {
-		console.log("!!! expected 'undefined block' error as block usage and definition is cyclic");
-		console.log(error);
-		console.log("!!! end expected error");
+	for (let child of temp_dom.children) {
+		if (child.tagName !== "solana_program") {
+			child.remove();
+		}
 	}
+	let temp_workspace = visualsolana.workspace_factory();
+	Blockly.Xml.domToWorkspace(temp_dom, temp_workspace);
+	workspace.clear();
 	visualsolana.generate_types_and_instructions(temp_workspace, workspace);
 
 	workspace.clear();

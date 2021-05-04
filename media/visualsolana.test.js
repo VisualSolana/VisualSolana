@@ -199,8 +199,8 @@ describe('InstructionGenerator', () => {
 			</statement>
 		</block>`, `"<block type=\\\"procedures_defnoreturn\\\">
 				<mutation>
-<arg instruction_name=\\\"account_0\\\"></arg>
-<arg instruction_name=\\\"account_1\\\"></arg>
+<arg name=\\\"account_0\\\"></arg>
+<arg name=\\\"account_1\\\"></arg>
 </mutation>
     <field name=\\\"NAME\\\">do something</field>     <comment></comment>    </block>"`.replace(/\s/g, " "));
 	})
@@ -244,7 +244,6 @@ describe('RustGenerator', () => {
 		<field name="NAME">solana program</field>
 		<statement name="type library"></statement>
 		<statement name="instruction library"></statement>
-		<statement name="instruction impl"></statement>
 		</block>`, `// !!! GENERATED CODE: DO NOT MODIFY !!!
 use solana_program::{
 	account_info::{AccountInfo},
@@ -308,7 +307,6 @@ pub fn process_instruction(
 			</block>
 		</statement>
 		<statement name="instruction library"></statement>
-		<statement name="instruction impl"></statement>
 		</block>`, `// !!! GENERATED CODE: DO NOT MODIFY !!!
 use solana_program::{
 	account_info::{AccountInfo},
@@ -383,16 +381,40 @@ describe("generate_types_and_instructions", () => {
 	let workspace = visualsolana.workspace_factory();
 	Blockly.Xml.domToWorkspace(dom, workspace)
 
+	test("should generate 2 setters and 2 getters for the 2 types", () => {
+		let to_workspace = visualsolana.workspace_factory()
+		let num_blocks_before_generation = Object.keys(Blockly.Blocks).length;
+		let expected_number_of_blocks = 4;
+
+		let types = visualsolana.generate_types(workspace, to_workspace);
+		expect(types).toHaveLength(expected_number_of_blocks);
+		// generate_types should not modify the workspace's dom
+		let dom = Blockly.Xml.workspaceToDom(to_workspace);
+		expect(dom.children).toHaveLength(0);
+		// generate_types should store blocks globally
+		expect(Object.keys(Blockly.Blocks).length).toEqual(num_blocks_before_generation + expected_number_of_blocks)
+		// regenerating types should not cause errors
+		visualsolana.generate_types(workspace, to_workspace);
+	})
+
+	test("non-svg workspace should generate two functions", () => {
+		let to_workspace = visualsolana.workspace_factory()
+		let dom_before = Blockly.Xml.workspaceToDom(workspace);
+		expect(dom_before.children).toHaveLength(1);
+
+		visualsolana.generate_instructions(workspace, to_workspace);
+		let dom_after = Blockly.Xml.workspaceToDom(to_workspace);
+		expect(dom_after.children).toHaveLength(3);
+		expect(dom_after.children[0].getAttribute("type")).toEqual("solana_program")
+		// blocks will overlap as a WorkspaceSVG is needed for the getBoundingRectangle() function call
+		expect(dom_after.children[0].getAttribute("x")).toEqual("10")
+		expect(dom_after.children[0].getAttribute("y")).toEqual("10")
+		expect(dom_after.children[1].getAttribute("x")).toEqual("10")
+		expect(dom_after.children[1].getAttribute("y")).toEqual("10")
+	})
+
 	test("should generate types", () => {
 		visualsolana.generate_types_and_instructions(workspace);
 		visualsolana.generate_types_and_instructions(workspace);
-	})
-
-	test("should generate instructions based on types", () => {
-
-	})
-
-	test("should not replace existing functions", () => {
-
 	})
 })
